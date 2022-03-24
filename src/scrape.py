@@ -31,8 +31,6 @@ def trustpilot_scraper(PATH: str, n_pages):
         time.sleep(2)
         soup = BeautifulSoup(req.text, 'html.parser')
 
-        print(soup.prettify())
-
         #initial reviews
         reviews_raw = soup.find("script", id = "__NEXT_DATA__").string
         reviews_raw = json.loads(reviews_raw)
