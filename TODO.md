@@ -1,4 +1,4 @@
-1. Clean the code and structure
+1. *Clean the code and structure*
  	- [ ] create main.py
  	- [ ] turn the spaghetti to functions (especially in model.py)
 2. Improve the model - 50-60 % on validation set is not the best
