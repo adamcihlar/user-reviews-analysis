@@ -18,12 +18,10 @@ class Dataset:
     def __init__(
         self,
         paths: List[str] = [
-            'data/reviews.csv',
-            'data/rev_3.csv',
-            'data/rev_3p.csv',
-            'data/rev_4.csv'
+            'data/trustpilot_data.csv',
+            'data/gsmarena_data.csv'
         ],
-        url_paths: List[Tuple[str, int] = [
+        url_paths: List[Tuple[str, int]] = [
         ('https://www.trustpilot.com/review/fairphone.com', 10),
         ('https://www.gsmarena.com/fairphone_3-reviews-10397.php', 1),
         ('https://www.gsmarena.com/fairphone_3+-reviews-10069.php', 5),
@@ -34,8 +32,10 @@ class Dataset:
         self.url_paths=url_paths
         self.data=[]
 
-    def load(self):
+    def load(self, new_paths: List[str] = None):
         temp_data = []
+        if new_paths is not None:
+            self.paths = new_paths
         for path_to_file in self.paths:
             if path.isfile(path_to_file):
                 temp_data.append(pd.read_csv(path_to_file))
@@ -45,8 +45,10 @@ class Dataset:
         trust_data = [df for df in temp_data if len(df.columns)==8]
         gsm_data = [df for df in temp_data if len(df.columns)!=8]
 
-        trust_df = pd.concat(trust_data)
-        gsm_df = pd.concat(gsm_data)
+        if len(trust_data)!=0:
+            trust_df = pd.concat(trust_data)
+        if len(gsm_data)!=0:
+            gsm_df = pd.concat(gsm_data)
 
         self.data = [trust_df, gsm_df]
 
@@ -54,10 +56,10 @@ class Dataset:
     def download_and_save(self):
         trust_data = []
         gsm_data = []
-        for url, n_pages in url_paths:
+        for url, n_pages in self.url_paths:
             if re.search('trustpilot.com', url):
                 trust_data.append(self._trustpilot_scraper(url, n_pages))
-            elif: re.search('gsmarena.com', url):
+            elif re.search('gsmarena.com', url):
                 gsm_data.append(self._gsmarena_scraper(url, n_pages))
         trust_df = pd.concat(trust_data)
         gsm_df = pd.concat(gsm_data)
@@ -67,7 +69,7 @@ class Dataset:
         self.data = [trust_df, gsm_df]
 
 
-    def _trustpilot_scraper(PATH: str, n_pages):
+    def _trustpilot_scraper(self, PATH: str, n_pages):
         #Lists
         body = []
         heading = []
@@ -125,7 +127,7 @@ class Dataset:
         return rev_df
 
 
-    def _gsmarena_scraper(PATH: str, n_pages):
+    def _gsmarena_scraper(self, PATH: str, n_pages):
 
         PATH_body = PATH[0:-4]
         PATH_append = PATH[-4:]
@@ -167,8 +169,9 @@ class Dataset:
 if __name__=='__main__':
 
     dataset = Dataset()
+#     dataset.download_and_save()
     dataset.load()
-    dataset.data
+    dataset.data[0]
 
 #     data_trus = trustpilot_scraper(
 #         'https://www.trustpilot.com/review/fairphone.com', 10
