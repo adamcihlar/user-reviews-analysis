@@ -1,5 +1,6 @@
 1. **Clean the code and structure**
  	- [ ] create main.py
+	- [ ] incorporate functionality of my  Dataset class to the torch Dataset
  	- [ ] turn the spaghetti to functions/classes (especially in model.py)
 2. **Improve the model** - 50-60 % on validation set is not the best
  	- [ ] try out a model pretrained for sentiment - number of classes?
