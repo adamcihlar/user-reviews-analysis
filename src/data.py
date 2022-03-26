@@ -8,13 +8,12 @@ import time
 import lxml
 from typing import List, Tuple
 import re
-
 from os import path
 from PIL import Image
 from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
 import matplotlib.pyplot as plt
 
-class Dataset:
+class RawDataset:
     def __init__(
         self,
         paths: List[str] = [
@@ -168,36 +167,13 @@ class Dataset:
 
 if __name__=='__main__':
 
-    dataset = Dataset()
-#     dataset.download_and_save()
-    dataset.load()
-    dataset.data[0]
-
-#     data_trus = trustpilot_scraper(
-#         'https://www.trustpilot.com/review/fairphone.com', 10
-#     )
-#     data_gsm3 = gsmarena_scraper(
-#         'https://www.gsmarena.com/fairphone_3-reviews-10397.php', 1
-#     )
-#     data_gsm3p = gsmarena_scraper(
-#         'https://www.gsmarena.com/fairphone_3+-reviews-10069.php', 5
-#     )
-#     data_gsm4 = gsmarena_scraper(
-#         'https://www.gsmarena.com/fairphone_4-reviews-11136.php', 10
-#     )
-#     data_trus.to_csv('data/rev_trus.csv')
-#     data_gsm3.to_csv('data/rev_3.csv')
-#     data_gsm3p.to_csv('data/rev_3p.csv')
-#     data_gsm4.to_csv('data/rev_4.csv')
-
-    data_trus = pd.read_csv('data/reviews.csv')
-    data_gsm3 = pd.read_csv('data/rev_3.csv')
-    data_gsm3p = pd.read_csv('data/rev_3p.csv')
-    data_gsm4 = pd.read_csv('data/rev_4.csv')
+    raw_dataset = RawDataset()
+    #dataset.download_and_save()
+    raw_dataset.load()
 
     text = ''
     nrows = 0
-    for df in [data_trus, data_gsm3, data_gsm3p, data_gsm4]:
+    for df in raw_dataset.data:
         text += df.Body.str.cat(sep=' ')
         nrows += len(df)
 
@@ -205,6 +181,7 @@ if __name__=='__main__':
                   'month', 'year', 'make', 'bought', 'got', 'week', 'day',
                   'buy', 'want', 'company', 'call','use', 'really', 'lot',
                   'jack', 'months'] + list(STOPWORDS)
+
     plt.figure()
     wc = WordCloud(
         stopwords = stop_words,
@@ -214,4 +191,4 @@ if __name__=='__main__':
     ).generate(text)
     plt.imshow(wc, interpolation='bilinear')
     plt.axis("off")
-    plt.savefig('assets/wordcloud_test.png')
+    plt.savefig('assets/wordcloud.png')
