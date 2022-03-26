@@ -12,14 +12,16 @@ from transformers import get_scheduler
 from tqdm.auto import tqdm
 from datasets import load_metric
 
-# from transformers import TrainingArguments, Trainer
 from transformers import BertTokenizer, BertForSequenceClassification
 from transformers import AutoModelForSequenceClassification
 from transformers import get_linear_schedule_with_warmup
-# from transformers import EarlyStoppingCallback
 
-# Create torch dataset
+from src.data import RawDataset
+from src.config import Models
+
 class Dataset(torch.utils.data.Dataset):
+    '''Keeps data in format accepted by the torch DataLoader'''
+
     def __init__(self, encodings, labels=None):
         self.encodings = encodings
         self.labels = labels
@@ -33,34 +35,23 @@ class Dataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.encodings["input_ids"])
 
-def compute_metrics(p):
-    pred, labels = p
-    pred = np.argmax(pred, axis=1)
+class Preprocessor:
+    '''Converts raw data to data in format accepted by torch Dataset class.
 
-    accuracy = accuracy_score(y_true=labels, y_pred=pred)
-    recall = recall_score(y_true=labels, y_pred=pred)
-    precision = precision_score(y_true=labels, y_pred=pred)
-    f1 = f1_score(y_true=labels, y_pred=pred)
-
-    return {"accuracy": accuracy, "precision": precision, "recall": recall, "f1": f1}
-
-def load_train(path):
-    train = pd.read_csv(path)
-    train = train[['Body', 'Rating']]
-    return train
-
-def load_test():
-    rev3 = pd.read_csv('data/rev_3.csv')
-    rev3p = pd.read_csv('data/rev_3p.csv')
-    rev4 = pd.read_csv('data/rev_4.csv')
-    test = pd.concat([rev3, rev3p, rev4])
-    test = test[['Body']]
-    return test
+    Receives a tokenizer instance to convert the text to vectors.
+    Method for tokenizing and splitting the data to train and val/test samples.
+    Initialization arg must be changed if using not BERT based tokenizer.
+    '''
+    def __init__(
+        self,
+        tokenizer = BertTokenizer.from_pretrained(Models.TINY_BERT)
+        ):
+        self.tokenizer = tokenizer
 
 if __name__=='__main__':
 
-    train = load_train('data/reviews.csv')
-    test = load_test()
+    raw_dataset = RawDataset()
+    raw_dataset.load()
 
     # Define pretrained tokenizer and model
     model_name = "prajjwal1/bert-tiny"

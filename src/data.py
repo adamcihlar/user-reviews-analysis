@@ -13,12 +13,20 @@ from PIL import Image
 from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
 import matplotlib.pyplot as plt
 
+from src.config import Paths
+
 class RawDataset:
+    '''Responsible for loading or downloading the raw data.
+
+    Keeps all data in original format as defined in scraping
+    functions. Further preprocessing is not in scope of this class, to be done
+    based on the next step.
+    '''
     def __init__(
         self,
         paths: List[str] = [
-            'data/trustpilot_data.csv',
-            'data/gsmarena_data.csv'
+            path.join(Paths.DATA, 'trustpilot_data.csv'),
+            path.join(Paths.DATA, 'gsmarena_data.csv'),
         ],
         url_paths: List[Tuple[str, int]] = [
         ('https://www.trustpilot.com/review/fairphone.com', 10),
@@ -62,8 +70,12 @@ class RawDataset:
                 gsm_data.append(self._gsmarena_scraper(url, n_pages))
         trust_df = pd.concat(trust_data)
         gsm_df = pd.concat(gsm_data)
-        trust_df.to_csv('data/trustpilot_data.csv')
-        gsm_df.to_csv('data/gsmarena_data.csv')
+        trust_df.to_csv(
+            path.join(Paths.DATA, 'trustpilot_data.csv')
+        )
+        gsm_df.to_csv(
+            path.join(Paths.DATA, 'gsmarena_data.csv')
+        )
 
         self.data = [trust_df, gsm_df]
 
@@ -191,4 +203,4 @@ if __name__=='__main__':
     ).generate(text)
     plt.imshow(wc, interpolation='bilinear')
     plt.axis("off")
-    plt.savefig('assets/wordcloud.png')
+    plt.savefig(path.join(Paths.ASSETS, 'wordcloud.png'))
