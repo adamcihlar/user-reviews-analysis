@@ -13,7 +13,7 @@ from PIL import Image
 from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
 import matplotlib.pyplot as plt
 
-from src.config import Paths
+from src.config import Paths, Datasets
 
 class RawDataset:
     '''Responsible for loading or downloading the raw data.
@@ -52,13 +52,17 @@ class RawDataset:
         trust_data = [df for df in temp_data if len(df.columns)==8]
         gsm_data = [df for df in temp_data if len(df.columns)!=8]
 
-        if len(trust_data)!=0:
-            trust_df = pd.concat(trust_data)
-        if len(gsm_data)!=0:
-            gsm_df = pd.concat(gsm_data)
+        trust_df = pd.concat(trust_data) if len(trust_data)!=0 else pd.DataFrame(columns=Datasets.TRUST_COLS)
+        gsm_df = pd.concat(gsm_data) if len(gsm_data)!=0 else pd.DataFrame(columns=Datasets.GSM_COLS)
+        trust_df = trust_df[Datasets.TRUST_COLS]
+        gsm_df = gsm_df[Datasets.GSM_COLS]
 
-        self.data = [trust_df, gsm_df]
-
+        self.data = [df for df in [trust_df, gsm_df] if len(df)>0]
+        self.X = []
+        self.y = []
+        for df in self.data:
+            self.X.append(df.drop(columns=['Rating']))
+            self.y.append(df['Rating'])
 
     def download_and_save(self):
         trust_data = []
@@ -68,8 +72,8 @@ class RawDataset:
                 trust_data.append(self._trustpilot_scraper(url, n_pages))
             elif re.search('gsmarena.com', url):
                 gsm_data.append(self._gsmarena_scraper(url, n_pages))
-        trust_df = pd.concat(trust_data)
-        gsm_df = pd.concat(gsm_data)
+        trust_df = pd.concat(trust_data) if len(trust_data)!=0 else pd.DataFrame(columns=Datasets.TRUST_COLS)
+        gsm_df = pd.concat(gsm_data) if len(gsm_data)!=0 else pd.DataFrame(columns=Datasets.GSM_COLS)
         trust_df.to_csv(
             path.join(Paths.DATA, 'trustpilot_data.csv')
         )
@@ -78,7 +82,11 @@ class RawDataset:
         )
 
         self.data = [trust_df, gsm_df]
-
+        self.X = []
+        self.y = []
+        for df in self.data:
+            self.X.append(df.drop(columns=['Rating']))
+            self.y.append(df['Rating'])
 
     def _trustpilot_scraper(self, PATH: str, n_pages):
         #Lists
@@ -165,6 +173,7 @@ class RawDataset:
         df = {
             'Date': dates,
             'Body': body,
+            'Rating': np.nan,
         }
 
         rev_df = pd.DataFrame(df)
@@ -180,8 +189,14 @@ class RawDataset:
 if __name__=='__main__':
 
     raw_dataset = RawDataset()
-    #dataset.download_and_save()
+#     dataset.download_and_save()
     raw_dataset.load()
+
+
+    trust_dataset = RawDataset([path.join(Paths.DATA, 'trustpilot_data.csv')])
+    trust_dataset.load()
+    trust_dataset.data
+
 
     text = ''
     nrows = 0
