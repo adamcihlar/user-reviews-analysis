@@ -44,14 +44,37 @@ class Preprocessor:
     '''
     def __init__(
         self,
-        tokenizer = BertTokenizer.from_pretrained(Models.TINY_BERT)
+        tokenizer = BertTokenizer.from_pretrained(Models.TINY_BERT),
+        split_size = 0.2
         ):
         self.tokenizer = tokenizer
+        self.split_size = split_size
+
+    def tokenize(self, df, column_to_tokenize: str, padding=True,
+                 truncation=True, max_length=512, **kwargs):
+        X = list(df[column_to_tokenize])
+        X_tokenized = self.tokenizer(X, padding=padding, truncation=truncation,
+                                     max_length=max_length, **kwargs)
+        return X_tokenized
+
+    def split_data(self, X, y, test_size=None):
+        if test_size is None:
+            return train_test_split(X, y, test_size=self.split_size)
+        return train_test_split(X, y, test_size=test_size)
+
 
 if __name__=='__main__':
 
     raw_dataset = RawDataset()
     raw_dataset.load()
+
+    ### CONTINUTE - need to follow 'Proprocess data' section below, does not
+    # work now with steps in different order
+    # add method converting labels to positive x negative to Preprocessor
+    preprocessor = Preprocessor()
+    X = preprocessor.tokenize(raw_dataset.data[0], 'Body')
+    y = raw_dataset.data[0]['Rating']-1
+    preprocessor.split_data(X, y)
 
     # Define pretrained tokenizer and model
     model_name = "prajjwal1/bert-tiny"
