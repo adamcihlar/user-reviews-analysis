@@ -1,9 +1,11 @@
 
 import numpy as np
 import pandas as pd
+from typing import Tuple
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 import torch
 from torch.utils.data import DataLoader
@@ -46,18 +48,40 @@ class Preprocessor:
     '''
     def __init__(
         self,
-        tokenizer = BertTokenizer.from_pretrained(Models.TINY_BERT),
+        method = 'tokenize', # 'vectorize'
+        vector_token_izer = BertTokenizer.from_pretrained(Models.TINY_BERT),
         split_size = 0.2
         ):
-        self.tokenizer = tokenizer
+        self.vector_token_izer = vector_token_izer
         self.split_size = split_size
+        self.method = method
 
-    def tokenize(self, df, column_to_tokenize: str, padding=True,
-                 truncation=True, max_length=512, **kwargs):
-        X = list(df[column_to_tokenize])
-        X_tokenized = self.tokenizer(X, padding=padding, truncation=truncation,
-                                     max_length=max_length, **kwargs)
-        return X_tokenized
+    def fit_transform(self, df, column_to_tokenize: str, padding=True,
+                 truncation=True, max_length=512,
+                 ngram_range: Tuple[int, int] = (1, 2), **kwargs):
+        if self.method == 'tokenize':
+            X = list(df[column_to_tokenize])
+            X_transformed = self.vector_token_izer(X, padding=padding,
+                                                   truncation=truncation,
+                                                   max_length=max_length,
+                                                   **kwargs)
+        else:
+            self.vector_token_izer.set_params(ngram_range=ngram_range, **kwargs)
+            X_transformed = self.vector_token_izer.fit_transform(df[column_to_tokenize])
+        return X_transformed
+
+    def transform(self, df, column_to_tokenize: str, padding=True,
+                 truncation=True, max_length=512,
+                 ngram_range: Tuple[int, int] = (1, 2), **kwargs):
+        if self.method == 'tokenize':
+            X = list(df[column_to_tokenize])
+            X_transformed = self.vector_token_izer(X, padding=padding,
+                                                   truncation=truncation,
+                                                   max_length=max_length,
+                                                   **kwargs)
+        else:
+            X_transformed = self.vector_token_izer.transform(df[column_to_tokenize])
+        return X_transformed
 
     def split_data(self, X, y, test_size=None):
         if test_size is None:
@@ -86,15 +110,15 @@ if __name__=='__main__':
     raw_dataset.y
 
     ### CONTINUTE
-    # add method converting labels to positive x negative to Preprocessor
     # add method for TF-IDF vectorizing
     # add dim reduction to Preprocessor?
-    preprocessor = Preprocessor()
+    preprocessor = Preprocessor(method='vectorize',
+                                vector_token_izer=TfidfVectorizer())
     y = preprocessor.shift_labels(raw_dataset.y)
     y = preprocessor.binarize_labels(raw_dataset.y)
     X_train, X_val, y_train, y_val = preprocessor.split_data(raw_dataset.X, y)[0]
-    X_train_tok = preprocessor.tokenize(X_train, 'Body')
-    X_val_tok = preprocessor.tokenize(X_val, 'Body')
+    X_train_tok = preprocessor.fit_transform(X_train, 'Body', max_features=5000)
+    X_val_tok = preprocessor.transform(X_val, 'Body')
 
     # Define pretrained tokenizer and model
     model_name = "prajjwal1/bert-tiny"
