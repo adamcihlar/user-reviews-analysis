@@ -36,10 +36,12 @@ class Dataset(torch.utils.data.Dataset):
         return len(self.encodings["input_ids"])
 
 class Preprocessor:
-    '''Converts raw data to data in format accepted by torch Dataset class.
+    '''Converts raw data to data in format accepted by torch Dataset class or
+    Scikit-learn models.
 
     Receives a tokenizer instance to convert the text to vectors.
-    Method for tokenizing and splitting the data to train and val/test samples.
+    Method for tokenizing, converting the classes to binary problem, splitting
+    the data to train and val/test samples, TF-IDF encoding.
     Initialization arg must be changed if using not BERT based tokenizer.
     '''
     def __init__(
@@ -67,10 +69,14 @@ if __name__=='__main__':
 
     raw_dataset = RawDataset()
     raw_dataset.load()
+    raw_dataset.X
+
 
     ### CONTINUTE - need to follow 'Proprocess data' section below, does not
     # work now with steps in different order
     # add method converting labels to positive x negative to Preprocessor
+    # add method for TF-IDF vectorizing
+    # add dim reduction to Preprocessor?
     preprocessor = Preprocessor()
     X = preprocessor.tokenize(raw_dataset.data[0], 'Body')
     y = raw_dataset.data[0]['Rating']-1

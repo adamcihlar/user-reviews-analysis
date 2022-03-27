@@ -6,7 +6,7 @@
  	- [ ] try out a model pretrained for sentiment - number of classes?
  	- [ ] larger model (tiny-bert might be too small?)
 	- [ ] small dataset, smaller ML algos - tree based, SVM, KNN, TF-IDF instead of semantic embeddings
-	- [ ] class TF-IDF - encode the sentences separately based on their class - (dim reduction) - train MLP (or other ML model, but MLP could handle the different inputs "meaning" for every class) - predictions as follows: encode the sample to every TF-IDF class defined space, run the model for n-class times, combine the predictions - sum probs (or logits)/take max/...
+	- [ ] class TF-IDF - vectorize the sentences separately based on their class - (dim reduction) - train MLP (or other ML model, but MLP could handle the different inputs "meaning" for every class) - predictions as follows: encode the sample to every TF-IDF class defined space, run the model for n-class times, combine the predictions - sum probs (or logits)/take max/...
 	- [ ] convert reviews to positive x negative, then pretrained sentiment model
 3. **Seperate WordClouds for classes** (/positive and negative reviews)
 4. **Embedding analysis** - get embeddings from the classifier, project to lower dim space (PCA?), color based on Ratings, clustering, main topics for the created clusters
