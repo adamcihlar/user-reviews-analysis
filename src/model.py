@@ -61,8 +61,21 @@ class Preprocessor:
 
     def split_data(self, X, y, test_size=None):
         if test_size is None:
-            return train_test_split(X, y, test_size=self.split_size)
-        return train_test_split(X, y, test_size=test_size)
+            test_size = self.split_size
+        return [train_test_split(X[i], y[i], test_size=self.split_size) for i in range(len(X))]
+
+    def shift_labels(self, y):
+        y_shifted = []
+        for i in range(len(y)):
+            y_shifted.append(y[i] - min(y[i]))
+        return y_shifted
+
+    def binarize_labels(self, y, positive_treshold=3):
+        y_bin = []
+        for i in range(len(y)):
+            y_bin.append((y[i] >= positive_treshold).astype('int'))
+        return y_bin
+
 
 
 if __name__=='__main__':
@@ -70,17 +83,18 @@ if __name__=='__main__':
     raw_dataset = RawDataset()
     raw_dataset.load()
     raw_dataset.X
+    raw_dataset.y
 
-
-    ### CONTINUTE - need to follow 'Proprocess data' section below, does not
-    # work now with steps in different order
+    ### CONTINUTE
     # add method converting labels to positive x negative to Preprocessor
     # add method for TF-IDF vectorizing
     # add dim reduction to Preprocessor?
     preprocessor = Preprocessor()
-    X = preprocessor.tokenize(raw_dataset.data[0], 'Body')
-    y = raw_dataset.data[0]['Rating']-1
-    preprocessor.split_data(X, y)
+    y = preprocessor.shift_labels(raw_dataset.y)
+    y = preprocessor.binarize_labels(raw_dataset.y)
+    X_train, X_val, y_train, y_val = preprocessor.split_data(raw_dataset.X, y)[0]
+    X_train_tok = preprocessor.tokenize(X_train, 'Body')
+    X_val_tok = preprocessor.tokenize(X_val, 'Body')
 
     # Define pretrained tokenizer and model
     model_name = "prajjwal1/bert-tiny"
