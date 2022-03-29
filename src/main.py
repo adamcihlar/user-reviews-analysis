@@ -2,6 +2,9 @@
 import numpy as np
 import pandas as pd
 
+# from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
+from wordcloud import STOPWORDS
+
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import TruncatedSVD
 from sklearn.pipeline import Pipeline
@@ -13,7 +16,7 @@ from sklearn.preprocessing import StandardScaler, Normalizer
 from sklearn.metrics import confusion_matrix
 
 from src.config import Paths, Datasets, Models
-from src.data import RawDataset
+from src.data import RawDataset, create_wordcloud
 from src.preprocessing import Preprocessor, Dataset
 
 if __name__=='__main__':
@@ -49,11 +52,31 @@ if __name__=='__main__':
     print("Best parameter (CV score=%0.3f):" % gridcv.best_score_)
     print(gridcv.best_params_)
     gridcv.cv_results_
+    # I really should create a test to compare models
 
     model = gridcv.best_estimator_
+    # save the model?
     X_test = rawdata.X[1]['Body']
     predictions = pd.DataFrame({
         'texts': rawdata.X[1]['Body'],
-        'pred_labels': model.predict(X_test)
+        'labels': model.predict(X_test)
     })
     predictions.to_excel('data/predictions.xls')
+
+    truth = pd.DataFrame({
+        'texts': rawdata.X[0]['Body'],
+        'labels': y
+    })
+
+    labeled_dataset = pd.concat([truth, predictions])
+    positive_reviews = labeled_dataset.loc[labeled_dataset['labels']==1]
+    negative_reviews = labeled_dataset.loc[labeled_dataset['labels']==0]
+
+    stop_words = ["Fairphone", "phone", "will", "back", "still",'one', 'now',
+                  'month', 'year', 'make', 'bought', 'got', 'week', 'day',
+                  'buy', 'want', 'company', 'call','use', 'really', 'lot',
+                  'jack', 'months']
+    create_wordcloud(positive_reviews, 'texts', stop_words,
+                     'assets/wc_positive.png')
+    create_wordcloud(negative_reviews, 'texts', stop_words,
+                     'assets/wc_negative.png')
