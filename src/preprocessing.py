@@ -6,6 +6,7 @@ from typing import Tuple
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import TruncatedSVD
 
 import torch
 from torch.utils.data import DataLoader
@@ -94,11 +95,12 @@ class Preprocessor:
             y_shifted.append(y[i] - min(y[i]))
         return y_shifted
 
-    def binarize_labels(self, y, positive_treshold=3):
+    def binarize_labels(self, y, positive_treshold=4):
         y_bin = []
         for i in range(len(y)):
             y_bin.append((y[i] >= positive_treshold).astype('int'))
         return y_bin
+
 
 
 
@@ -110,7 +112,8 @@ if __name__=='__main__':
     raw_dataset.y
 
     ### CONTINUTE
-    # add dim reduction to Preprocessor?
+    # add dim reduction to Preprocessor? no, apply ut separately, it would just
+    # mess the class
     preprocessor = Preprocessor(method='vectorize',
                                 vector_token_izer=TfidfVectorizer())
     y = preprocessor.shift_labels(raw_dataset.y)
@@ -118,6 +121,8 @@ if __name__=='__main__':
     X_train, X_val, y_train, y_val = preprocessor.split_data(raw_dataset.X, y)[0]
     X_train_tok = preprocessor.fit_transform(X_train, 'Body', max_features=5000)
     X_val_tok = preprocessor.transform(X_val, 'Body')
+
+    svd = TruncatedSVD(n_components=50)
 
     # Define pretrained tokenizer and model
     model_name = "prajjwal1/bert-tiny"
