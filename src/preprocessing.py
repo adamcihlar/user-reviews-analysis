@@ -110,7 +110,6 @@ if __name__=='__main__':
     raw_dataset.y
 
     ### CONTINUTE
-    # add method for TF-IDF vectorizing
     # add dim reduction to Preprocessor?
     preprocessor = Preprocessor(method='vectorize',
                                 vector_token_izer=TfidfVectorizer())
@@ -123,13 +122,6 @@ if __name__=='__main__':
     # Define pretrained tokenizer and model
     model_name = "prajjwal1/bert-tiny"
     tokenizer = BertTokenizer.from_pretrained(model_name)
-
-    # Preprocess data
-    X = list(train["Body"])
-    y = list(train["Rating"]-1)
-    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2)
-    X_train_tokenized = tokenizer(X_train, padding=True, truncation=True, max_length=512)
-    X_val_tokenized = tokenizer(X_val, padding=True, truncation=True, max_length=512)
 
     # transform data to torch Dataset style
     train_dataset = Dataset(X_train_tokenized, y_train)
