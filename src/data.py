@@ -186,6 +186,23 @@ class RawDataset:
         return rev_df
 
 
+def create_wordcloud(df, column_with_text, stopwords: List[str], save_path):
+    text = df[column_with_text].str.cat(sep=' ')
+    stop_words = stopwords + list(STOPWORDS)
+
+    plt.figure()
+    wc = WordCloud(
+        stopwords = stop_words,
+        background_color="white",
+        collocation_threshold = 3,
+        max_words=20
+    ).generate(text)
+    plt.imshow(wc, interpolation='bilinear')
+    plt.axis("off")
+    plt.savefig(save_path)
+    pass
+
+
 if __name__=='__main__':
 
     raw_dataset = RawDataset()
