@@ -80,3 +80,38 @@ if __name__=='__main__':
                      'assets/wc_positive.png')
     create_wordcloud(negative_reviews, 'texts', stop_words,
                      'assets/wc_negative.png')
+
+
+    ### animated plot
+    import matplotlib.pyplot as plt
+    import matplotlib.animation as animation
+
+    rawdata.data[0]
+    fig, ax = plt.subplots()
+
+    rawdata.data[0]['Quarter'] = pd.to_datetime(rawdata.data[0]['Date']).dt.to_period('Q')
+    y = rawdata.data[0].groupby('Quarter').mean()
+
+    x = rawdata.data[0]['Quarter']
+    line, = ax.plot(x, y)
+
+
+    def animate(i):
+        line.set_ydata(np.sin(x + i / 50))  # update the data.
+        return line,
+
+
+    ani = animation.FuncAnimation(
+        fig, animate, interval=20, blit=True, save_count=50)
+
+    # To save the animation, use e.g.
+    #
+    # ani.save("movie.mp4")
+    #
+    # or
+    #
+    # writer = animation.FFMpegWriter(
+    #     fps=15, metadata=dict(artist='Me'), bitrate=1800)
+    # ani.save("movie.mp4", writer=writer)
+
+    plt.show()
