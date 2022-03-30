@@ -90,9 +90,12 @@ if __name__=='__main__':
     fig, ax = plt.subplots()
 
     rawdata.data[0]['Quarter'] = pd.to_datetime(rawdata.data[0]['Date']).dt.to_period('Q')
-    y = rawdata.data[0].groupby('Quarter').mean()
 
-    x = rawdata.data[0]['Quarter']
+    x = rawdata.data[0]['Rating'].expanding().mean()
+    y = rawdata.data[0]['Date']
+
+#     y = rawdata.data[0].groupby('Quarter').mean()
+#     x = rawdata.data[0]['Quarter'].unique()
     line, = ax.plot(x, y)
 
 
