@@ -1,7 +1,7 @@
 1. **Clean the code and structure**
- 	- [ ] create main.py
+ 	- [x] create main.py
 	- [x] incorporate functionality of my Dataset class to the torch Dataset - eventually renamed my Dataset to RawDataset and kept them apart as the two classes will be used in different stages of pipeline
- 	- [ ] turn the spaghetti to functions/classes (especially in model.py)
+ 	- [x] turn the spaghetti to functions/classes (especially in model.py)
 2. **Improve the model** - 50-60 % on validation set is not the best
  	- [ ] try out a model pretrained for sentiment - number of classes?
  	- [ ] larger model (tiny-bert might be too small?)
