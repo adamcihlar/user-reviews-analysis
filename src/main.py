@@ -15,6 +15,9 @@ from sklearn.model_selection import ParameterGrid
 from sklearn.preprocessing import StandardScaler, Normalizer
 from sklearn.metrics import confusion_matrix
 
+from torch.nn import Linear, Parameter
+from torch import nn
+
 from src.config import Paths, Datasets, Models
 from src.data import RawDataset, create_wordcloud
 from src.preprocessing import Preprocessor, Dataset
@@ -241,6 +244,25 @@ if __name__=='__main__':
         test_predictions += list(predictions.cpu().detach().numpy())
 
     test['Rating_pred'] = test_predictions
+
+    # Get embeddings
+    # cut the last classifying layer
+    # get the embeddings
+    # cluser
+    # plot in 2D
+    # extract topics
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
