@@ -16,9 +16,9 @@ from torch.nn import Linear, Parameter
 from torch import nn
 
 from src.config import Paths, Datasets, Models
-from src.data.get_data import RawDataset
+from src.dataset.get_data import RawDataset
 from src.utils.wordcloud import create_wordcloud
-from src.data.preprocessing import Preprocessor, Dataset
+from src.dataset.preprocessing import Preprocessor, Dataset
 
 if __name__=='__main__':
 
