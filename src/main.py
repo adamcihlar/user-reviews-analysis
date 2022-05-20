@@ -2,9 +2,6 @@
 import numpy as np
 import pandas as pd
 
-# from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
-from wordcloud import STOPWORDS
-
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import TruncatedSVD
 from sklearn.pipeline import Pipeline
@@ -19,8 +16,9 @@ from torch.nn import Linear, Parameter
 from torch import nn
 
 from src.config import Paths, Datasets, Models
-from src.data import RawDataset, create_wordcloud
-from src.preprocessing import Preprocessor, Dataset
+from src.data.get_data import RawDataset
+from src.utils.wordcloud import create_wordcloud
+from src.data.preprocessing import Preprocessor, Dataset
 
 if __name__=='__main__':
 
@@ -39,7 +37,7 @@ if __name__=='__main__':
                                 vector_token_izer=TfidfVectorizer())
     y = preprocessor.binarize_labels(y)
 
-    # Random Forrest Pipeline
+    # Random Forrest pipeline
     pipe = Pipeline([
         ('tfidf', preprocessor.vector_token_izer),
         ('scaler', Normalizer()),
@@ -79,6 +77,7 @@ if __name__=='__main__':
                   'month', 'year', 'make', 'bought', 'got', 'week', 'day',
                   'buy', 'want', 'company', 'call','use', 'really', 'lot',
                   'jack', 'months']
+
     create_wordcloud(positive_reviews, 'texts', stop_words,
                      'assets/wc_positive.png')
     create_wordcloud(negative_reviews, 'texts', stop_words,
