@@ -87,7 +87,9 @@ class Preprocessor:
     def split_data(self, X, y, test_size=None):
         if test_size is None:
             test_size = self.split_size
-        return [train_test_split(X[i], y[i], test_size=self.split_size) for i in range(len(X))]
+        return [train_test_split(
+            X[i], y[i], test_size=test_size, random_state=42
+        ) for i in range(len(X))]
 
     def shift_labels(self, y):
         y_shifted = []

@@ -1,4 +1,5 @@
 
+import os
 import numpy as np
 import pandas as pd
 
@@ -12,6 +13,16 @@ from sklearn.model_selection import ParameterGrid
 from sklearn.preprocessing import StandardScaler, Normalizer
 from sklearn.metrics import confusion_matrix
 
+import torch
+from torch.utils.data import DataLoader
+from torch.optim import AdamW
+from transformers import get_scheduler
+from tqdm.auto import tqdm
+from datasets import load_metric
+
+from transformers import BertTokenizer, BertForSequenceClassification
+from transformers import AutoModelForSequenceClassification
+from transformers import get_linear_schedule_with_warmup
 from torch.nn import Linear, Parameter
 from torch import nn
 
@@ -19,12 +30,9 @@ from src.config import Paths, Datasets, Models
 from src.dataset.get_data import RawDataset
 from src.utils.wordcloud import create_wordcloud
 from src.dataset.preprocessing import Preprocessor, Dataset
+from src.utils.augment_queries import get_new_samples_counts, augment_contextual_synonyms, augment_backtranslation, insert_typos, swap_characters, delete_random_charaters
 
-if __name__=='__main__':
-
-    ### Standard sklearn pipeline to try out few standard ML models with
-    # gridsearch
-
+def standard_ml():
     # Load data
     rawdata = RawDataset()
     #rawdata.download_and_save()
@@ -36,6 +44,68 @@ if __name__=='__main__':
     preprocessor = Preprocessor(method='vectorize',
                                 vector_token_izer=TfidfVectorizer())
     y = preprocessor.binarize_labels(y)
+    X_train, X_test, y_train, y_test = preprocessor.split_data(
+        [X], [y], test_size=0.3
+    )[0]
+
+
+    if augment:
+        # Augment train data
+        train = pd.DataFrame({'X':X_train, 'y':y_train})
+
+        label=0
+        aug_context = pd.DataFrame({
+            'X': augment_contextual_synonyms(train.loc[train.y==label].iloc[20:40], 'X'),
+            'y': label
+        })
+        aug_backtrans = pd.DataFrame({
+            'X': augment_backtranslation(train.loc[train.y==label].iloc[0:20], 'X'),
+            'y': label
+        })
+        aug_typos = pd.DataFrame({
+            'X': insert_typos(train.loc[train.y==label], 'X'),
+            'y': label
+        })
+        aug_swap = pd.DataFrame({
+            'X': swap_characters(train.loc[train.y==label], 'X'),
+            'y': label
+        })
+        aug_delete = pd.DataFrame({
+            'X': delete_random_charaters(train.loc[train.y==label], 'X'),
+            'y': label
+        })
+        train = pd.concat(train, aug_context, aug_backtrans, aug_typos, aug_swap,
+                  aug_delete, axis=0)
+
+        label=1
+        aug_context = pd.DataFrame({
+            'X': augment_contextual_synonyms(train.loc[train.y==label], 'X'),
+            'y': label
+        })
+        aug_backtrans = pd.DataFrame({
+            'X': augment_backtranslation(train.loc[train.y==label], 'X'),
+            'y': label
+        })
+        aug_typos = pd.DataFrame({
+            'X': insert_typos(train.loc[train.y==label], 'X'),
+            'y': label
+        })
+        aug_swap = pd.DataFrame({
+            'X': swap_characters(train.loc[train.y==label], 'X'),
+            'y': label
+        })
+        aug_delete = pd.DataFrame({
+            'X': delete_random_charaters(train.loc[train.y==label], 'X'),
+            'y': label
+        })
+        train = pd.concat(train, aug_context, aug_backtrans, aug_typos, aug_swap,
+                  aug_delete, axis=0)
+
+        X_train = train['X']
+        y_train = train['y']
+
+
+
 
     # Random Forrest pipeline
     pipe = Pipeline([
@@ -45,24 +115,28 @@ if __name__=='__main__':
         ('rfc', RandomForestClassifier()),
     ])
     params = {
-        'svd__n_components': [30, 40, 50, 70, 100],
+        'svd__n_components': [30,  50,  100, 150],
         'rfc__n_estimators': [100, 200, 300, 400],
     }
     gridcv = GridSearchCV(pipe, params, n_jobs=-1, cv=5, scoring='f1')
-    gridcv.fit(X, y)
+    gridcv.fit(X_train, y_train)
     print("Best parameter (CV score=%0.3f):" % gridcv.best_score_)
     print(gridcv.best_params_)
     gridcv.cv_results_
-    # I really should create a test to compare models
 
     model = gridcv.best_estimator_
-    # save the model?
-    X_test = rawdata.X[1]['Body']
+
+    # eval on test
+    y_test_pred = model.predict(X_test)
+    confusion_matrix(y_test, y_test_pred)
+    print(classification_report(y_test, y_test_pred))
+
+    X_pred = rawdata.X[1]['Body']
     predictions = pd.DataFrame({
         'texts': rawdata.X[1]['Body'],
-        'labels': model.predict(X_test)
+        'labels': model.predict(X_pred)
     })
-    predictions.to_excel('data/predictions.xls')
+    predictions.to_csv('data/predictions.csv')
 
     truth = pd.DataFrame({
         'texts': rawdata.X[0]['Body'],
@@ -82,23 +156,12 @@ if __name__=='__main__':
                      'assets/wc_positive.png')
     create_wordcloud(negative_reviews, 'texts', stop_words,
                      'assets/wc_negative.png')
+    pass
 
 
-    ### Embeddings approach - Tiny BERT
-    import torch
-    from torch.utils.data import DataLoader
-    from torch.optim import AdamW
-    from transformers import get_scheduler
-    from tqdm.auto import tqdm
-    from datasets import load_metric
 
-    from transformers import BertTokenizer, BertForSequenceClassification
-    from transformers import AutoModelForSequenceClassification
-    from transformers import get_linear_schedule_with_warmup
 
-    from src.data import RawDataset
-    from src.config import Models
-
+def tiny_bert():
     # Load data
     rawdata = RawDataset()
     #rawdata.download_and_save()
@@ -149,20 +212,6 @@ if __name__=='__main__':
     counter = 0
 
     for epoch in range(num_epochs):
-
-        model.eval()
-        for batch in val_dataloader:
-            batch = {k: v.to(device) for k, v in batch.items()}
-            with torch.no_grad():
-                outputs = model(**batch)
-
-            logits = outputs.logits
-            predictions = torch.argmax(logits, dim=-1)
-            val_metric.add_batch(predictions=predictions, references=batch["labels"])
-
-        val_metric_progress.append(val_metric.compute()['f1'])
-        print('Validation metric:', val_metric_progress[len(val_metric_progress)-1])
-
         # training
         model.train()
         loss_progress = []
@@ -182,7 +231,6 @@ if __name__=='__main__':
                 mean_loss = np.mean(np.array(loss_progress))
                 print('Training loss:', mean_loss)
                 loss_progress = []
-
 
         # validation
         model.eval()
@@ -211,11 +259,10 @@ if __name__=='__main__':
 
     confusion_matrix(y_val, val_predictions)
 
-
     # save the model
     save_path = 'models/tiny_bert_classifier'
+    os.makedirs(os.path.split(save_path)[0], exist_ok=True)
     torch.save(model.state_dict(), save_path)
-
 
     # Prediction
     # load the model
@@ -225,11 +272,11 @@ if __name__=='__main__':
     model.eval()
 
     # prepare data
-    X_test = rawdata.data[1]
-    X_test_tokenized = preprocessor.transform(X_test, 'Body')
+    test = rawdata.data[1]
+    X_test_tokenized = preprocessor.transform(test, 'Body')
     # transform data to torch Dataset style
     test_dataset = Dataset(X_test_tokenized)
-    # create dataloaders
+    # create dataloader
     test_dataloader = DataLoader(test_dataset, batch_size=8)
 
     test_predictions = []
@@ -243,61 +290,47 @@ if __name__=='__main__':
         test_predictions += list(predictions.cpu().detach().numpy())
 
     test['Rating_pred'] = test_predictions
-
-    # Get embeddings
-    # cut the last classifying layer
-    # get the embeddings
-    # cluser
-    # plot in 2D
-    # extract topics
+    test.Rating_pred.value_counts()
+    pass
 
 
+if __name__=='__main__':
+    pass
+
+    import torch
+    import timeit
+    from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
+
+    tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
+    model = DistilBertForSequenceClassification.from_pretrained("distilbert-base-uncased")
+
+    inputs = tokenizer("Hello, my dog is cute", return_tensors="pt")
+
+    with torch.no_grad():
+        logits = model(**inputs).logits
+
+    predicted_class_id = logits.argmax().item()
+    model.config.id2label[predicted_class_id]
+
+num_labels = len(model.config.id2label)
 
 
 
+    testcode = """
+    inputs = tokenizer("Hello, my dog is cute", return_tensors="pt")
 
+    with torch.no_grad():
+        logits = model(**inputs).logits
 
+    predicted_class_id = logits.argmax().item()
+    """
+    settings = """
+    import torch
+    from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
 
-
-
-
-
-
-
-
-    ### animated plot
-    import matplotlib.pyplot as plt
-    import matplotlib.animation as animation
-
-    rawdata.data[0]
-    fig, ax = plt.subplots()
-
-    rawdata.data[0]['Quarter'] = pd.to_datetime(rawdata.data[0]['Date']).dt.to_period('Q')
-
-    x = rawdata.data[0]['Rating'].expanding().mean()
-    y = rawdata.data[0]['Date']
-
-#     y = rawdata.data[0].groupby('Quarter').mean()
-#     x = rawdata.data[0]['Quarter'].unique()
-    line, = ax.plot(x, y)
-
-
-    def animate(i):
-        line.set_ydata(np.sin(x + i / 50))  # update the data.
-        return line,
-
-
-    ani = animation.FuncAnimation(
-        fig, animate, interval=20, blit=True, save_count=50)
-
-    # To save the animation, use e.g.
-    #
-    # ani.save("movie.mp4")
-    #
-    # or
-    #
-    # writer = animation.FFMpegWriter(
-    #     fps=15, metadata=dict(artist='Me'), bitrate=1800)
-    # ani.save("movie.mp4", writer=writer)
-
-    plt.show()
+    tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
+    model = DistilBertForSequenceClassification.from_pretrained("distilbert-base-uncased")
+    """
+    inference_time = timeit.repeat(stmt=testcode, setup=settings, number=1, repeat=100)
+    np.mean(inference_time)
+    np.std(inference_time)
